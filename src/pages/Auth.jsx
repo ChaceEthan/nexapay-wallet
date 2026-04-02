@@ -18,14 +18,14 @@ const Auth = () => {
           <p className="text-slate-400">Your Stellar Wallet</p>
         </div>
         <div className="grid md:grid-cols-2 gap-8">
-        <div className="bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-800 hover:border-purple-700 transition">
-          <h2 className="text-3xl font-bold text-white mb-6">Create Account</h2>
-          <SignUpComponent />
-        </div>
-
-        <div className="bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-800 hover:border-purple-700 transition">
-          <h2 className="text-3xl font-bold text-white mb-6">Sign In</h2>
-          <SignInComponent onLogin={handleSignIn} />
+          <div className="bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-800 hover:border-purple-700 transition">
+            <h2 className="text-3xl font-bold text-white mb-6">Create Account</h2>
+            <SignUpComponent />
+          </div>
+          <div className="bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-800 hover:border-purple-700 transition">
+            <h2 className="text-3xl font-bold text-white mb-6">Sign In</h2>
+            <SignInComponent onLogin={handleSignIn} />
+          </div>
         </div>
       </div>
     </div>
