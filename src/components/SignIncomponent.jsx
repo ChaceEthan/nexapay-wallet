@@ -37,21 +37,9 @@ const SignInComponent = ({ onLogin }) => {
     }
 
     try {
-      const url = `${import.meta.env.VITE_API_URL}/signin`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      // Mock API call for signin
+      // Simulate successful login
+      const data = { email, token: 'mock-token', userId: '1' };
 
       // Handle remember me
       if (rememberMe) {

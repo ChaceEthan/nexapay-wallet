@@ -30,26 +30,9 @@ const DepositComponent = () => {
     const url = `${import.meta.env.VITE_API_URL}/deposit`;
 
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          walletAddress: formData.walletAddress,
-          amount: parseFloat(formData.amount),
-          currency: formData.currency,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok) {
-        setSuccessMessage(data.message || 'Deposit successful!');
-        setFormData({ walletAddress: '', amount: '', currency: 'USD' });
-      } else {
-        setError(data.message || 'Deposit failed');
-      }
+      // Mock deposit
+      setSuccessMessage('Deposit successful!');
+      setFormData({ walletAddress: '', amount: '', currency: 'USD' });
     } catch (err) {
       console.error('Deposit error:', err);
       setError('Network error or server is unreachable');

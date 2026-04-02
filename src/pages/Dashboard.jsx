@@ -7,15 +7,18 @@ import SetValue from '../components/SetValue';
 import GetValue from '../components/GetValue';
 
 const Dashboard = () => {
-  const { userEmail, logout } = useAuth();
+  const { userEmail, logout, balance } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 p-6">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">NexaPay Dashboard</h1>
-            {userEmail && <p className="text-slate-400">Welcome back, {userEmail}</p>}
+          <div className="flex items-center space-x-4">
+            <img src="/logo.svg" alt="NexaPay Logo" className="w-10 h-10" />
+            <div>
+              <h1 className="text-4xl font-bold text-white mb-2">NexaPay Dashboard</h1>
+              {userEmail && <p className="text-slate-400">Welcome back, {userEmail}</p>}
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <WalletConnect />
@@ -25,6 +28,26 @@ const Dashboard = () => {
             >
               Logout
             </button>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <div className="bg-slate-900 rounded-2xl shadow-lg p-6 border border-slate-800">
+            <h2 className="text-2xl font-bold text-white mb-4">Wallet Balance</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold">XLM</span>
+                </div>
+                <div>
+                  <p className="text-slate-300 text-sm">Stellar Lumens</p>
+                  <p className="text-white text-lg font-semibold">{balance.toFixed(2)} XLM</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-slate-400 text-sm">≈ ${(balance * 0.1).toFixed(2)} USD</p>
+              </div>
+            </div>
           </div>
         </div>
 

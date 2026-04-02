@@ -25,14 +25,9 @@ const GetValue = () => {
     const url = `${import.meta.env.VITE_API_URL}/get_value/${key}`;
 
     try {
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (response.ok) {
-        setValue(data.value);
-      } else {
-        setError(data.message || 'Failed to get value');
-      }
+      // Mock get value
+      const mockData = { message: 'Hello from NexaPay!', timestamp: new Date().toISOString() };
+      setValue(mockData);
     } catch (err) {
       console.error('GetValue error:', err);
       setError('Network error or server is unreachable');

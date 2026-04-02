@@ -38,25 +38,9 @@ const SetValue = () => {
     const url = `${import.meta.env.VITE_API_URL}/set_value`;
 
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          key: formData.key,
-          value: parsedValue,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccessMessage(data.message || 'Value set successfully!');
-        setFormData({ key: '', value: '' });
-      } else {
-        setError(data.message || 'Failed to set value');
-      }
+      // Mock set value
+      setSuccessMessage('Value set successfully!');
+      setFormData({ key: '', value: '' });
     } catch (err) {
       console.error('SetValue error:', err);
       setError('Network error or server is unreachable');

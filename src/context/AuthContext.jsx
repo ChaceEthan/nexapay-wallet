@@ -14,6 +14,9 @@ export const AuthProvider = ({ children }) => {
   const [userEmail, setUserEmail] = useState(() => {
     return localStorage.getItem('userEmail') || null;
   });
+  const [balance, setBalance] = useState(() => {
+    return parseFloat(localStorage.getItem('balance')) || 0;
+  });
 
   const login = (email, password, userData = null) => {
     if (email && password) {
@@ -41,9 +44,11 @@ export const AuthProvider = ({ children }) => {
     setIsLoggedIn(false);
     setUserPublicKey(null);
     setUserEmail(null);
+    setBalance(0);
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userPublicKey');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('balance');
   };
 
   const setWalletPublicKey = (publicKey) => {
@@ -59,9 +64,11 @@ export const AuthProvider = ({ children }) => {
     isLoggedIn,
     userPublicKey,
     userEmail,
+    balance,
     login,
     logout,
     setWalletPublicKey,
+    setBalance,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
