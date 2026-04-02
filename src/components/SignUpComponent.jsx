@@ -66,28 +66,48 @@ const SignUpComponent = () => {
       return;
     }
 
-    const url = `${import.meta.env.VITE_API_URL}/signup`;
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const url = `${apiUrl}/signup`;
 
     try {
-      // Mock API call for signup
-      // Simulate successful signup
-      const data = { walletAddress: 'GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX' };
-
-      setSuccessMessage('Sign up successful!');
-      setWalletAddress(data.walletAddress);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        countryCode: '+250',
-        phoneNumber: '',
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          password: formData.password,
+          country: formData.countryCode,
+          phoneNumber: formData.countryCode + formData.phoneNumber,
+        }),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSuccessMessage('Sign up successful!');
+        setWalletAddress(data.walletAddress || 'N/A');
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          countryCode: '+250',
+          phoneNumber: '',
+        });
+      } else {
+        setError(data.message || 'Sign up failed');
+      }
     } catch (err) {
       console.error('Signup error:', err);
       setError('Network error or server is unreachable');
     } finally {
+      setLoading(false);
+    }
       setLoading(false);
     }
   };

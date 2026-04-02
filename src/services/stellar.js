@@ -6,20 +6,31 @@ const SOROBAN_RPC_URL = 'https://soroban-testnet.stellar.org';
 
 export const connectWallet = async () => {
   try {
-    // Check if Freighter extension is installed and allowed
-    const allowed = await isAllowed();
-    if (!allowed) {
-      throw new Error('Freighter wallet extension not installed or not allowed');
+    // Check if Freighter is available
+    if (!window.freighterApi) {
+      throw new Error('Freighter wallet extension not installed');
     }
 
-    // Request address from connected wallet
-    const address = await getAddress();
-
-    if (!address) {
-      throw new Error('Failed to connect wallet');
+    // Check if connected
+    const isConnected = await window.freighterApi.isConnected();
+    if (!isConnected) {
+      throw new Error('Freighter wallet not connected');
     }
 
-    return address;
+    // Request access
+    const accessGranted = await window.freighterApi.requestAccess();
+    if (!accessGranted) {
+      throw new Error('Access to wallet denied');
+    }
+
+    // Get public key
+    const publicKey = await window.freighterApi.getPublicKey();
+
+    if (!publicKey) {
+      throw new Error('Failed to get public key');
+    }
+
+    return publicKey;
   } catch (error) {
     throw new Error(error.message || 'Wallet connection failed');
   }
