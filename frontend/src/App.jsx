@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link, Routes, Route, useNavigate } from "react-router-dom";
+import { Link, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { getAddress, isConnected, signTransaction } from "@stellar/freighter-api";
 import { Server, TransactionBuilder, Operation, Asset, Networks } from "@stellar/stellar-sdk";
 import axios from "axios";
@@ -23,11 +23,41 @@ function formatDate(value) {
   }
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-[80vh] max-w-6xl mx-auto p-4 md:p-6 text-center text-red-100 bg-red-950/30 rounded-xl">
+          <h1 className="text-2xl font-bold">Something went wrong</h1>
+          <p className="mt-2">Please refresh or try again later.</p>
+          <pre className="mt-4 text-xs text-rose-300 break-words">{this.state.error?.message}</pre>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 function AuthPage({ mode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const path = mode === "signup" ? "signup" : "signin";
 
@@ -40,7 +70,14 @@ function AuthPage({ mode }) {
       const endpoint = `${API_URL}/${path}`;
       const response = await axios.post(endpoint, { email, password });
       setMessage({ type: "success", text: response.data?.message || `${path} successful` });
+
+      if (path === "signup") {
+        setTimeout(() => navigate("/auth"), 200);
+      } else {
+        setTimeout(() => navigate("/"), 200);
+      }
     } catch (error) {
+      console.error(error);
       setMessage({
         type: "error",
         text:
@@ -54,7 +91,7 @@ function AuthPage({ mode }) {
   }
 
   return (
-    <main className="min-h-screen w-full p-8 bg-gradient-to-br from-slate-950 via-blue-950 to-black text-slate-100">
+    <main className="min-h-[80vh] w-full p-8 bg-gradient-to-br from-slate-950 via-blue-950 to-black text-slate-100">
       <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-white/8 p-8 backdrop-blur-xl shadow-glow">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-cyan-300">{mode === "signup" ? "Sign Up" : "Sign In"}</h2>
@@ -225,12 +262,24 @@ function Dashboard() {
   };
 
   useEffect(() => {
+    console.log("Dashboard mounted");
     connectFreighter();
   }, []);
 
+  if (typeof window !== "undefined" && !window.freighterApi) {
+    return (
+      <main className="min-h-[80vh] max-w-6xl mx-auto p-4 md:p-6 text-center text-slate-100">
+        <div className="rounded-xl border border-white/10 bg-black/40 p-8">
+          <h1 className="text-2xl font-bold">Freighter extension not detected</h1>
+          <p className="mt-2">Please install Freighter to continue using wallet features.</p>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="min-h-screen w-full p-4 md:p-6 lg:p-8 text-slate-100">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="min-h-[80vh] max-w-6xl mx-auto p-4 md:p-6 text-slate-100">
+      <div className="space-y-6">
         <header className="glass-card flex flex-wrap items-center justify-between gap-4 p-5">
           <div className="flex items-center gap-3">
             <img src={logo} alt="NexaPay" className="h-10 w-10" />
@@ -248,7 +297,7 @@ function Dashboard() {
           </button>
         </header>
 
-        <section className="grid gap-6 xl:grid-cols-4">
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <article className="glass-card p-5">
             <h2 className="text-xl font-semibold text-cyan-200">Connected Wallet</h2>
             <p className="mt-2 text-slate-300">{connected ? shortenKey(publicKey) : "No wallet connected"}</p>
@@ -334,12 +383,15 @@ function Dashboard() {
 }
 
 export default function App() {
+  console.log("App Loaded");
+
   return (
     <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/signin" element={<AuthPage mode="signin" />} />
-      <Route path="/signup" element={<AuthPage mode="signup" />} />
-      <Route path="*" element={<Dashboard />} />
+      <Route path="/" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+      <Route path="/auth" element={<ErrorBoundary><AuthPage mode="signin" /></ErrorBoundary>} />
+      <Route path="/signin" element={<ErrorBoundary><AuthPage mode="signin" /></ErrorBoundary>} />
+      <Route path="/signup" element={<ErrorBoundary><AuthPage mode="signup" /></ErrorBoundary>} />
+      <Route path="*" element={<Navigate to="/auth" replace />} />
     </Routes>
   );
 }
