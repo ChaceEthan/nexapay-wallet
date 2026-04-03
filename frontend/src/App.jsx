@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { getAddress, isConnected, signTransaction } from "@stellar/freighter-api";
-import { Server, TransactionBuilder, Operation, Asset, Networks } from "@stellar/stellar-sdk";
+import { TransactionBuilder, Operation, Asset, Networks, Account, Memo } from "@stellar/stellar-sdk";
 import axios from "axios";
-import { ArrowRight, Clock, Send, Download, Wallet, LogIn } from "lucide-react";
+import { ArrowRight, Clock, Send, Download, Wallet, LogIn, Copy } from "lucide-react";
 import logo from "./assets/logo.svg";
+import { getAccountDetails, getTransactionHistory, fundAccount, submitTransaction } from "./services/api";
 
-const HORIZON_URL = "https://horizon-testnet.stellar.org";
-const FRIEND_BOT_URL = "https://friendbot.stellar.org";
 const API_URL = import.meta.env.VITE_API_URL || "https://nexapay-wallet.onrender.com";
 
 function shortenKey(key) {
@@ -138,64 +137,76 @@ function AuthPage({ mode }) {
   );
 }
 
-function Dashboard() {
+function useWalletConnection() {
   const [publicKey, setPublicKey] = useState("");
-  const [xlmBalance, setXlmBalance] = useState("0");
-  const [txHistory, setTxHistory] = useState([]);
-  const [status, setStatus] = useState("Ready");
   const [connected, setConnected] = useState(false);
-  const [sendAmount, setSendAmount] = useState("");
-  const [sendDestination, setSendDestination] = useState("");
-  const [sendResult, setSendResult] = useState(null);
+  const [status, setStatus] = useState("Ready");
 
-  const server = new Server(HORIZON_URL);
+  const connectFreighter = async (callbacks = {}) => {
+    const isFreighterAvailable = typeof window !== "undefined" && window.freighterApi;
+    console.log("Freighter available:", isFreighterAvailable);
 
-  const refreshAccount = async (address) => {
-    if (!address) return;
-    try {
-      const account = await server.loadAccount(address);
-      const nativeBalance = account.balances.find((item) => item.asset_type === "native")?.balance || "0";
-      setXlmBalance(nativeBalance);
-      setStatus("Balance refreshed");
-    } catch (e) {
-      setStatus(`Failed to load account: ${e.message}`);
-      setXlmBalance("0");
-    }
-  };
-
-  const updateTransactionHistory = async (address) => {
-    if (!address) return;
-    try {
-      const ops = await server.operations().forAccount(address).order("desc").limit(20).call();
-      setTxHistory(ops.records || []);
-    } catch (e) {
-      setStatus(`Failed tx history: ${e.message}`);
-      setTxHistory([]);
-    }
-  };
-
-  const connectFreighter = async () => {
     setStatus("Connecting to Freighter...");
     try {
       const { isConnected: isFreighterConnected } = await isConnected();
       if (!isFreighterConnected) {
         setStatus("Freighter not connected. Install extension and unlock wallet.");
-        return;
+        return { success: false };
       }
 
       const { address, error } = await getAddress();
       if (error || !address) {
-        setStatus(error?.message || "Failed to get public key from Freighter");
-        return;
+        setStatus(
+          error?.message || "Connection failed or rejected: Failed to get public key from Freighter"
+        );
+        return { success: false };
       }
 
       setPublicKey(address);
       setConnected(true);
       setStatus("Wallet connected.");
-      await refreshAccount(address);
-      await updateTransactionHistory(address);
+
+      if (callbacks.onConnect) {
+        await callbacks.onConnect(address);
+      }
+      return { success: true, address };
     } catch (error) {
       setStatus(`Connection error: ${error.message || String(error)}`);
+      return { success: false };
+    }
+  };
+
+  return { publicKey, connected, status, setStatus, connectFreighter };
+}
+
+function useAccountInfo(publicKey, setStatus) {
+  const [xlmBalance, setXlmBalance] = useState("0");
+  const [txHistory, setTxHistory] = useState([]);
+
+  const refreshAccount = async (address) => {
+    const target = address || publicKey;
+    if (!target) return;
+    try {
+      const data = await getAccountDetails(target);
+      const nativeBalance = data.balances?.find((item) => item.asset_type === "native")?.balance || "0";
+      setXlmBalance(nativeBalance);
+      setStatus("Balance refreshed");
+    } catch (e) {
+      setStatus(`Failed to load account: ${e.message || "Unknown error"}`);
+      setXlmBalance("0");
+    }
+  };
+
+  const updateTransactionHistory = async (address) => {
+    const target = address || publicKey;
+    if (!target) return;
+    try {
+      const data = await getTransactionHistory(target);
+      // Handling both array responses and object-wrapped records
+      setTxHistory(data.records || data || []);
+    } catch (e) {
+      setStatus(`Failed tx history: ${e.message}`);
+      setTxHistory([]);
     }
   };
 
@@ -203,14 +214,21 @@ function Dashboard() {
     if (!publicKey) return;
     setStatus("Funding with Friendbot...");
     try {
-      const res = await fetch(`${FRIEND_BOT_URL}/?addr=${publicKey}`);
-      if (!res.ok) throw new Error(`Friendbot returned ${res.status}`);
-      await refreshAccount(publicKey);
+      await fundAccount(publicKey);
       setStatus("Friendbot funding successful!");
+      await refreshAccount(publicKey);
     } catch (error) {
-      setStatus(`Friendbot error: ${error.message}`);
+      setStatus(`Funding error: ${error.response?.data?.error || error.message}`);
     }
   };
+
+  return { xlmBalance, txHistory, refreshAccount, updateTransactionHistory, fundViaFriendbot };
+}
+
+function usePaymentForm(publicKey, setStatus, onPaymentSuccess) {
+  const [sendAmount, setSendAmount] = useState("");
+  const [sendDestination, setSendDestination] = useState("");
+  const [sendResult, setSendResult] = useState(null);
 
   const sendPayment = async (e) => {
     e.preventDefault();
@@ -229,10 +247,12 @@ function Dashboard() {
     setStatus("Preparing transaction...");
 
     try {
-      const account = await server.loadAccount(publicKey);
-      const baseFee = await server.fetchBaseFee();
+      const accountData = await getAccountDetails(publicKey);
+      const account = new Account(publicKey, accountData.sequence);
+      const baseFee = "100"; // Can be fetched from backend if needed
+
       const tx = new TransactionBuilder(account, {
-        fee: baseFee.toString(),
+        fee: baseFee,
         networkPassphrase: Networks.TESTNET,
       })
         .addOperation(
@@ -248,30 +268,106 @@ function Dashboard() {
       const result = await signTransaction(tx.toXDR(), { networkPassphrase: Networks.TESTNET });
       if (result.error) throw new Error(result.error.message || "Failed to sign transaction");
 
-      const submitResult = await server.submitTransaction(result.signedTxXdr);
+      const submitResult = await submitTransaction(result.signedTxXdr);
       setSendResult({ type: "success", message: `Success! Hash: ${submitResult.hash}` });
       setStatus("Payment sent successfully.");
       setSendDestination("");
       setSendAmount("");
-      await refreshAccount(publicKey);
-      await updateTransactionHistory(publicKey);
+      if (onPaymentSuccess) {
+        await onPaymentSuccess();
+      }
     } catch (error) {
-      setSendResult({ type: "error", message: error?.response?.data?.extras?.result_codes?.transaction || error.message || "Send failed" });
+      let errorMessage = "Send failed";
+      if (error?.response?.data?.extras?.result_codes?.transaction) {
+        errorMessage = `Transaction failed: ${error.response.data.extras.result_codes.transaction}`;
+      } else if (error?.message) {
+        errorMessage = `Signing failed or rejected: ${error.message}`;
+      }
+      setSendResult({ type: "error", message: errorMessage });
       setStatus(`Send error: ${error.message}`);
     }
   };
 
+  return { sendAmount, setSendAmount, sendDestination, setSendDestination, sendResult, sendPayment };
+}
+
+function Dashboard() {
+  const { publicKey, connected, status, setStatus, connectFreighter } = useWalletConnection();
+
+  const [copyFeedback, setCopyFeedback] = useState(false);
+
+  const handleCopyAddress = async () => {
+    if (publicKey) {
+      try {
+        await navigator.clipboard.writeText(publicKey);
+        setCopyFeedback(true);
+        setTimeout(() => setCopyFeedback(false), 2000); // Hide feedback after 2 seconds
+      } catch (err) {
+        console.error("Failed to copy address:", err);
+      }
+    }
+  };
+  const {
+    xlmBalance,
+    txHistory,
+    refreshAccount,
+    updateTransactionHistory,
+    fundViaFriendbot,
+  } = useAccountInfo(publicKey, setStatus);
+
+  const {
+    sendAmount,
+    setSendAmount,
+    sendDestination,
+    setSendDestination,
+    sendResult,
+    sendPayment,
+  } = usePaymentForm(publicKey, setStatus, async () => {
+    await refreshAccount();
+    await updateTransactionHistory();
+  });
+
   useEffect(() => {
-    console.log("Dashboard mounted");
-    connectFreighter();
+    connectFreighter({
+      onConnect: async (address) => {
+        await refreshAccount(address);
+        await updateTransactionHistory(address);
+      },
+    });
   }, []);
 
-  if (typeof window !== "undefined" && !window.freighterApi) {
+  // Safe Freighter detection for rendering
+  const isFreighterAvailable = typeof window !== "undefined" && window.freighterApi;
+  if (!isFreighterAvailable) {
     return (
       <main className="min-h-[80vh] max-w-6xl mx-auto p-4 md:p-6 text-center text-slate-100">
         <div className="rounded-xl border border-white/10 bg-black/40 p-8">
           <h1 className="text-2xl font-bold">Freighter extension not detected</h1>
           <p className="mt-2">Please install Freighter to continue using wallet features.</p>
+          <a
+            href="https://freighter.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="glass-btn mt-6 inline-flex items-center gap-2"
+          >
+            <Download size={16} /> Install Freighter
+          </a>
+        </div>
+      </main>
+    );
+  }
+
+  // Check if window.freighterApi is undefined before accessing it
+  if (typeof window.freighterApi === 'undefined' && !connected) {
+    // This handles the edge case where isFreighterAvailable is true but window.freighterApi is undefined.
+    // This state should ideally be caught by the !isFreighterAvailable check above.
+    // Adding this as a defensive measure.
+    // In a real application, this might trigger a more detailed error logging or fallback.
+    return (
+      <main className="min-h-[80vh] max-w-6xl mx-auto p-4 md:p-6 text-center text-slate-100">
+        <div className="rounded-xl border border-white/10 bg-black/40 p-8">
+          <h1 className="text-2xl font-bold">Freighter wallet not ready</h1>
+          <p className="mt-2">Please ensure the Freighter extension is active and try refreshing the page.</p>
         </div>
       </main>
     );
@@ -300,7 +396,16 @@ function Dashboard() {
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <article className="glass-card p-5">
             <h2 className="text-xl font-semibold text-cyan-200">Connected Wallet</h2>
-            <p className="mt-2 text-slate-300">{connected ? shortenKey(publicKey) : "No wallet connected"}</p>
+            <div className="mt-2 flex items-center gap-2">
+              <p className="text-slate-300">{connected ? shortenKey(publicKey) : "No wallet connected"}</p>
+              {connected && (
+                <button onClick={handleCopyAddress} className="text-slate-400 hover:text-cyan-300 transition-colors duration-200" title="Copy address">
+                  <Copy size={16} />
+                </button>
+              )}
+            </div>
+            {copyFeedback && <span className="text-xs text-emerald-400">Copied!</span>}
+
             <p className="mt-5 text-sm text-slate-300">Network: Testnet</p>
             <p className="text-2xl font-bold text-white mt-4">{xlmBalance} XLM</p>
             <button className="glass-btn mt-4" onClick={fundViaFriendbot}>
