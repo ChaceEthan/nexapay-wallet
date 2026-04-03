@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(circle at top, #2f46ab 0%, #121f40 55%, #050b18 100%);
+  min-height: 100vh;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(18px);
+  border-radius: 1.5rem;
+  box-shadow: 0 0 35px rgba(120, 90, 255, 0.35);
+}
+
+.glass-btn {
+  border-radius: 9999px;
+  background-image: linear-gradient(90deg, #6366f1, #0ea5e9);
+  padding: 0.5rem 1.25rem;
+  font-weight: 600;
+  color: white;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 10px 20px rgba(30, 60, 150, 0.3);
+}
+
+.glass-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 15px 25px rgba(30, 60, 150, 0.48);
+}
