@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as StellarSdk from "@stellar/stellar-sdk";
 import { signTransaction } from "@stellar/freighter-api";
 

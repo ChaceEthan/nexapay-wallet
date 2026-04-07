@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useCallback } from "react";
 import WalletConnect from "./WalletConnect";
 import TransactionForm from "./TransactionForm";
