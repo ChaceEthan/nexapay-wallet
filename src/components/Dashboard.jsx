@@ -8,9 +8,11 @@ import { Wallet, RefreshCw } from "lucide-react";
 
 export default function Dashboard() {
   const [publicKey, setPublicKey] = useState(null);
+  const [manualKey, setManualKey] = useState(""); // Mobile input
   const [balance, setBalance] = useState("0");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Fetch balance function
   const fetchBalance = useCallback(async (key) => {
     if (!key) return;
     try {
@@ -23,13 +25,28 @@ export default function Dashboard() {
     }
   }, []);
 
+  // Auto-fetch balance on key or refresh
   useEffect(() => {
     if (publicKey) {
       fetchBalance(publicKey);
+      localStorage.setItem("nexapayWallet", publicKey); // Save wallet
     }
   }, [publicKey, refreshTrigger, fetchBalance]);
 
+  // Load saved wallet on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem("nexapayWallet");
+    if (savedKey) setPublicKey(savedKey);
+  }, []);
+
+  // Desktop Freighter connect
   const handleConnect = (key) => setPublicKey(key);
+
+  // Mobile manual connect
+  const handleManualConnect = () => {
+    if (manualKey) setPublicKey(manualKey);
+  };
+
   const handleTransactionSuccess = () => setRefreshTrigger(prev => prev + 1);
 
   return (
@@ -53,10 +70,31 @@ export default function Dashboard() {
           {/* Balance */}
           <section className="p-6 md:p-8 bg-slate-800 rounded-3xl border border-slate-700 lg:col-span-1 flex flex-col justify-between">
             <div>
+
+              {/* Mobile manual input */}
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder="Enter wallet address (for mobile)"
+                  value={manualKey}
+                  onChange={(e) => setManualKey(e.target.value)}
+                  className="w-full p-2 rounded bg-slate-700 text-white"
+                />
+                <button
+                  onClick={handleManualConnect}
+                  className="mt-2 w-full bg-cyan-500 p-2 rounded text-white"
+                >
+                  Connect Mobile Wallet
+                </button>
+              </div>
+
               <h2 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center justify-between">
                 <span>Available Balance</span>
                 {publicKey && (
-                  <button onClick={handleTransactionSuccess} className="text-cyan-500 hover:text-cyan-400 transition-colors p-1 bg-cyan-500/10 rounded-md">
+                  <button
+                    onClick={handleTransactionSuccess}
+                    className="text-cyan-500 hover:text-cyan-400 transition-colors p-1 bg-cyan-500/10 rounded-md"
+                  >
                     <RefreshCw size={14} />
                   </button>
                 )}

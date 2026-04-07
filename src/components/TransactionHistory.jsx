@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import { getTransactionHistory } from "../services/stellar";
 import { ArrowDownLeft, ArrowUpRight } from "lucide-react";

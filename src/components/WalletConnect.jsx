@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { isConnected, getPublicKey, setAllowed } from "@stellar/freighter-api";
 import { Wallet } from "lucide-react";
