@@ -3,7 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Dashboard from "@/pages/Dashboard.jsx";
 import Trade from "@/pages/Trade.jsx";
 import Markets from "@/pages/Markets.jsx";
-import Defi from "@/pages/Defi.jsx";
+import Defi from "@/pages/DeFi.jsx";
 import Settings from "@/pages/Settings.jsx";
 
 import ProtectedRoute from "@/components/ProtectedRoute.jsx";

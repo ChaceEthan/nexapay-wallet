@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Dashboard from "@pages/Dashboard.jsx";
 import Markets from "@pages/Markets.jsx";
 import Trade from "@pages/Trade.jsx";
-import DeFi from "@pages/DeFi.jsx";
+import DeFi from "@/pages/DeFi.jsx";
 import Settings from "@pages/Settings.jsx"; 
 import Staking from "@pages/Staking.jsx";
 import WalletChoice from "@pages/WalletChoice.jsx";
