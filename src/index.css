@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0b0e11] text-slate-100 antialiased;
+  }
+
+  #root {
+    @apply min-h-screen;
+  }
+}
+
+/* ===== GLASS SYSTEM ===== */
+@layer components {
+
+  .glass-card {
+    @apply relative overflow-hidden rounded-2xl border border-white/10
+    bg-white/5 backdrop-blur-xl shadow-xl;
+  }
+ 
+  .glass-btn {
+    @apply px-4 py-2 rounded-xl font-semibold text-white
+    bg-white/5 border border-white/10
+    hover:bg-white/10 active:scale-95 transition;
+  }
+
+  .glass-input {
+    @apply w-full px-4 py-3 rounded-xl
+    bg-black/40 border border-white/10
+    text-white placeholder-gray-400
+    focus:border-cyan-400 outline-none;
+  }
+
+  .card-hover {
+    @apply transition hover:scale-[1.02] hover:bg-white/10;
+  }
+}

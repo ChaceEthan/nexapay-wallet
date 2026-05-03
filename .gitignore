@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.vite
+
+# Environment variables
+.env
+.env.*
+
+# Cache
+.eslintcache
+
+# OS specific
+.DS_Store
+*.log
