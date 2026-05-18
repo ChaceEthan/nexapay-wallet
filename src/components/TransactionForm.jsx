@@ -8,7 +8,7 @@ import { showToast } from "@/toastSlice";
 import { fetchWalletData } from "@/walletSlice";
 import { addNotification } from "@/notificationSlice";
 import { triggerPush } from "@/utils/pushNotifications";
-import QRScanner from "@/components/QRScanner";
+import QRScannerModal from "@/components/QRScannerModal";
 
 const SUPPORTED_ASSETS = [{ code: "XLM", issuer: null, name: "Stellar Lumens" }, { code: "USDC", issuer: "GBBD67IF6QV6K6WJSZ7TYH66PWHXWNSXNCTW35ZJRYTHXNQKQ535N2F2", name: "USD Coin" }];
 
@@ -279,7 +279,7 @@ export default function TransactionForm({ recipient: initialRecipient, onClose, 
         document.body
       )}
       {showQRScanner && (
-        <QRScanner
+        <QRScannerModal
           onClose={() => setShowQRScanner(false)}
           onScan={(payload) => {
             applyScanPayload(payload);

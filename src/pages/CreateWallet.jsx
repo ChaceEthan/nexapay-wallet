@@ -19,7 +19,11 @@ export default function CreateWallet() {
   const handleGenerate = async () => {
     try {
       setLoading(true);
-      const mnemonic = bip39.generateMnemonic();
+      setError("");
+      const mnemonic = bip39.generateMnemonic(128);
+      if (!bip39.validateMnemonic(mnemonic)) {
+        throw new Error("Generated phrase failed validation.");
+      }
       setGeneratedPhrase(mnemonic);
       setStep(2);
     } catch (err) {
@@ -36,6 +40,12 @@ export default function CreateWallet() {
   };
 
   const handleProceedToConfirmation = () => {
+    if (!bip39.validateMnemonic(generatedPhrase)) {
+      setError("Recovery phrase is invalid. Generate a new phrase.");
+      setStep(1);
+      return;
+    }
+
     const keys = deriveKeypairFromMnemonic(generatedPhrase);
     
     const newWallet = {
@@ -54,7 +64,8 @@ export default function CreateWallet() {
   };
 
   const handleRecover = () => {
-    const cleanedInput = importPhrase.trim().replace(/\s+/g, " ");
+    setError("");
+    const cleanedInput = importPhrase.trim().toLowerCase().replace(/\s+/g, " ");
     if (!cleanedInput) return setError("Enter your recovery phrase.");
 
     const words = cleanedInput.split(" ");
@@ -63,7 +74,7 @@ export default function CreateWallet() {
     }
 
     if (!bip39.validateMnemonic(cleanedInput)) {
-      return setError("Invalid recovery phrase. Check spelling.");
+      return setError("Invalid recovery phrase. Check each word and the word order.");
     }
 
     const keys = deriveKeypairFromMnemonic(cleanedInput);

@@ -150,12 +150,15 @@ const SafeMarketChart = ({ data, status }) => {
 };
 
 const DegradedModeBanner = ({ marketStatus, wsStatus, lastMarketSync }) => {
-  if (marketStatus === "live" && wsStatus === "live") return null;
+  const hasUsableFallback = marketStatus === "cached" && lastMarketSync;
+  if ((marketStatus === "live" && wsStatus === "live") || hasUsableFallback) return null;
 
   const copy =
     marketStatus === "loading"
       ? "Synchronizing market data with cached prices ready."
-      : "Live services are degraded. Cached prices and fallback health checks are active.";
+      : wsStatus === "offline"
+        ? "Live stream is unavailable. REST polling is keeping the dashboard updated."
+        : "Live services are reconnecting. Cached prices remain available.";
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-amber-100">
@@ -249,20 +252,24 @@ export default function Dashboard() {
     if (wsActive) return;
     
     const poll = async () => {
-      const data = await getMarketData();
-      if (data && data.xlm) {
-        setMarketData(prev => ({
-          ...(prev || FALLBACK_MARKET_DATA),
-          ...data,
-          xlm: {
-            ...data.xlm,
-            price: safePrice(data.xlm.price, prev?.xlm?.price || FALLBACK_XLM_PRICE),
-          },
-          history: data.history || prev?.history
-        }));
-        if (data.history) setPriceHistory(data.history);
-        setMarketStatus(data.isLive ? "live" : "cached");
-        setLastMarketSync(new Date(data.lastUpdated || Date.now()));
+      try {
+        const data = await getMarketData();
+        if (data && data.xlm) {
+          setMarketData(prev => ({
+            ...(prev || FALLBACK_MARKET_DATA),
+            ...data,
+            xlm: {
+              ...data.xlm,
+              price: safePrice(data.xlm.price, prev?.xlm?.price || FALLBACK_XLM_PRICE),
+            },
+            history: data.history || prev?.history
+          }));
+          if (data.history) setPriceHistory(data.history);
+          setMarketStatus(data.isLive ? "live" : "cached");
+          setLastMarketSync(new Date(data.lastUpdated || Date.now()));
+        }
+      } catch {
+        setMarketStatus((prev) => (prev === "live" ? "cached" : prev || "cached"));
       }
     };
 
@@ -273,26 +280,30 @@ export default function Dashboard() {
 
   useEffect(() => {
     const load = async () => {
-      const data = await getMarketData();
-      if (data) {
-        setMarketData({
-          ...FALLBACK_MARKET_DATA,
-          ...data,
-          xlm: {
-            ...FALLBACK_MARKET_DATA.xlm,
-            ...data.xlm,
-            price: safePrice(data?.xlm?.price, FALLBACK_XLM_PRICE),
-          },
-        });
-        setPriceHistory(data.history || []);
-        setMarketStatus(data.isLive ? "live" : "cached");
-        setLastMarketSync(new Date(data.lastUpdated || Date.now()));
-      } else {
+      try {
+        const data = await getMarketData();
+        if (data) {
+          setMarketData({
+            ...FALLBACK_MARKET_DATA,
+            ...data,
+            xlm: {
+              ...FALLBACK_MARKET_DATA.xlm,
+              ...data.xlm,
+              price: safePrice(data?.xlm?.price, FALLBACK_XLM_PRICE),
+            },
+          });
+          setPriceHistory(data.history || []);
+          setMarketStatus(data.isLive ? "live" : "cached");
+          setLastMarketSync(new Date(data.lastUpdated || Date.now()));
+        } else {
+          setMarketStatus("cached");
+        }
+      } catch {
         setMarketStatus("cached");
       }
     };
-    load().catch(() => setMarketStatus("cached"));
-  }, [wsActive]);
+    load();
+  }, []);
 
   useEffect(() => {
     const checkNetwork = async () => {

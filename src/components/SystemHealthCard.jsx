@@ -9,7 +9,7 @@ import { api, backendPath } from "@/services/api"; // Assuming api.js exports th
  */
 export default function SystemHealthCard({ wsActive, marketStatus = "cached" }) {
   const [horizonStatus, setHorizonStatus] = useState("checking"); // 'checking', 'online', 'offline'
-  const [marketApiStatus, setMarketApiStatus] = useState("checking"); // 'checking', 'online', 'offline'
+  const [marketApiStatus, setMarketApiStatus] = useState(marketStatus === "cached" ? "degraded" : "checking"); // 'checking', 'online', 'degraded', 'offline'
   const [lastMarketSync, setLastMarketSync] = useState(null);
 
   const currentNetwork = useSelector((state) => state.auth?.network || "testnet");
@@ -47,14 +47,14 @@ export default function SystemHealthCard({ wsActive, marketStatus = "cached" }) 
         setMarketApiStatus(isHealthy ? "online" : "offline"); 
         setLastMarketSync(new Date());
       } catch (e) {
-        setMarketApiStatus("offline");
+        setMarketApiStatus((prev) => (prev === "online" || marketStatus === "cached" ? "degraded" : "offline"));
       }
     };
 
     checkMarketApi();
     const interval = setInterval(checkMarketApi, 30000); // Check every 30 seconds
     return () => clearInterval(interval);
-  }, []);
+  }, [marketStatus]);
 
   const getStatusIcon = (status) => {
     if (status === "online") return <CheckCircle2 size={18} className="text-emerald-400" />;
@@ -66,7 +66,7 @@ export default function SystemHealthCard({ wsActive, marketStatus = "cached" }) 
   const getStatusText = (status) => {
     if (status === "online") return "Online";
     if (status === "degraded") return "Cached";
-    if (status === "offline") return "Offline";
+    if (status === "offline") return "Fallback";
     return "Checking...";
   };
 

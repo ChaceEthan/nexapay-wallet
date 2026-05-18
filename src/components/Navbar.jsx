@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Menu, Wallet, Check, ScanLine } from "lucide-react";
 import { setScannedRecipient, setActiveWallet } from "../walletSlice";
 import NotificationBell from "@/components/NotificationBell";
-import QRScanner from "@/components/QRScanner";
+import QRScannerModal from "@/components/QRScannerModal";
 import NetworkStatus from "@/components/NetworkStatus";
 
 
@@ -143,7 +143,7 @@ export default function Navbar({ setOpen }) {
 
       {/* ✅ QR SCANNER PORTAL */}
       {showQRScanner && (
-        <QRScanner
+        <QRScannerModal
           onClose={() => setShowQRScanner(false)}
           onScan={(scannedAddress) => {
             dispatch(setScannedRecipient(scannedAddress));
